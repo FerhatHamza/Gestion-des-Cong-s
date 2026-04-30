@@ -19,8 +19,8 @@
     <p id="error" class="text-red-500 mt-2 text-sm hidden"></p>
   </div>
   <script>
-     const API = 'winter-wildflower-7564.didcrist.workers.dev';
-    document.getElementById('loginBtn').onclick = async () => {
+      const API = 'https://winter-wildflower-7564.didcrist.workers.dev/api';
+      document.getElementById('loginBtn').onclick = async () => {
       const code = document.getElementById('code').value.trim();
       if (!code) return;
       const res = await fetch(`${API}/auth/login`, {
