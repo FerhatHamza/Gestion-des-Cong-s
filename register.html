@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compléter vos informations</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body { font-family: 'Tajawal', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 p-8">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
+    <h2 class="text-2xl font-bold mb-6">Complétez vos informations</h2>
+    <form id="registerForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div><label class="block">Nom</label><input type="text" id="first_name" class="w-full border rounded p-2" required></div>
+      <div><label class="block">Prénom</label><input type="text" id="last_name" class="w-full border rounded p-2" required></div>
+      <div><label class="block">Nom en arabe</label><input type="text" id="first_name_ar" class="w-full border rounded p-2" required></div>
+      <div><label class="block">Prénom en arabe</label><input type="text" id="last_name_ar" class="w-full border rounded p-2" required></div>
+      <div><label class="block">Grade</label><select id="grade_id" class="w-full border rounded p-2" required></select></div>
+      <div><label class="block">Diplôme</label><select id="degree_id" class="w-full border rounded p-2" required></select></div>
+      <div><label class="block">Service</label><select id="service_id" class="w-full border rounded p-2" required></select></div>
+      <div><label class="block">Établissement</label><select id="center_id" class="w-full border rounded p-2" required></select></div>
+      <div><label class="block">Région</label><select id="region" class="w-full border rounded p-2" required>
+        <option value="NORMAL">NORMAL</option><option value="SUD_2">SUD_2</option>
+      </select></div>
+      <div><label class="block">Téléphone professionnel</label><input type="text" id="work_phone" class="w-full border rounded p-2"></div>
+      <div class="md:col-span-2 mt-4">
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Enregistrer</button>
+      </div>
+    </form>
+    <p id="msg" class="mt-4 text-center text-sm"></p>
+  </div>
+  <script>
+    const API = 'https://votre-worker.workers.dev/api';
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'index.html';
+    async function loadReferentials() {
+      for (const table of ['grades','degrees','services','centers']) {
+        const res = await fetch(`${API}/referentials/${table}`, { headers: { Authorization: Bearer ${token} } });
+        const data = await res.json();
+        const select = document.getElementById(table === 'centers' ? 'center_id' : table.slice(0,-1)+'_id');
+        data.forEach(item => { const opt = document.createElement('option'); opt.value = item.id; opt.text = item.name; select.appendChild(opt); });
+      }
+    }
+    loadReferentials();
+    document.getElementById('registerForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const body = {
+        first_name: document.getElementById('first_name').value,
+        last_name: document.getElementById('last_name').value,
+        first_name_ar: document.getElementById('first_name_ar').value,
+        last_name_ar: document.getElementById('last_name_ar').value,
+        grade_id: parseInt(document.getElementById('grade_id').value),
+        degree_id: parseInt(document.getElementById('degree_id').value),
+        service_id: parseInt(document.getElementById('service_id').value),
+        center_id: parseInt(document.getElementById('center_id').value),
+        region: document.getElementById('region').value,
+        work_phone: document.getElementById('work_phone').value
+      };
+      const res = await fetch(`${API}/auth/register`, {
+        method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${token}`}, body:JSON.stringify(body)
+      });
+      if (res.ok) {
+        document.getElementById('msg').textContent = 'Profil complété avec succès ! Redirection...';
+        setTimeout(() => location.href='employee.html', 1500);
+      } else {
+        const err = await res.json();
+        document.getElementById('msg').textContent = err.error || 'Erreur';
+      }
+    };
+  </script>
+</body>
+</html>
