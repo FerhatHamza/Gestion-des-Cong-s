@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employé - EPSP Berriane</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>body { font-family: 'Tajawal', sans-serif; }</style>
+</head>
+<body class="bg-gray-50">
+  <div class="flex h-screen">
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white shadow-md p-5 flex flex-col">
+      <h2 class="text-xl font-bold mb-8">EPSP Berriane</h2>
+      <nav class="space-y-2 flex-1">
+        <a href="#" class="block p-2 bg-blue-100 rounded" onclick="showTab('dashboard')">Tableau de bord</a>
+        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('request')">Nouvelle demande</a>
+        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('history')">Historique</a>
+        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('initial')">Saisie initiale</a>
+        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="logout()">Déconnexion</a>
+      </nav>
+      <p id="empName" class="text-sm"></p>
+    </aside>
+
+    <!-- Content -->
+    <main class="flex-1 p-6 overflow-auto">
+      <!-- Dashboard -->
+      <div id="dashboardTab">
+        <h1 class="text-2xl font-bold mb-4">Votre tableau de bord</h1>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" id="soldeCards"></div>
+        <div class="bg-white p-4 rounded shadow">
+          <h2 class="font-bold mb-2">Statut actuel</h2>
+          <p id="statusText" class="text-lg"></p>
+        </div>
+        <div class="mt-6">
+          <h2 class="font-bold mb-2">Calendrier des congés</h2>
+          <div id="calendar" class="bg-white p-4 rounded shadow"></div>
+        </div>
+      </div>
+
+      <!-- Formulaire demande -->
+      <div id="requestTab" class="hidden">
+        <h2 class="text-2xl font-bold mb-4">Demande de congé</h2>
+        <!-- ... (champs type, mode, dates, durée, observation, bouton) ... -->
+      </div>
+
+      <!-- Historique -->
+      <div id="historyTab" class="hidden">
+        <h2 class="text-2xl font-bold mb-4">Historique des demandes</h2>
+        <div class="overflow-x-auto"><table class="min-w-full bg-white"><thead><tr><th class="p-2">Type</th><th>Dates</th><th>Jours</th><th>Statut</th><th>Action</th></tr></thead><tbody id="historyBody"></tbody></table></div>
+      </div>
+
+      <!-- Saisie initiale -->
+      <div id="initialTab" class="hidden">
+        <h2 class="text-2xl font-bold mb-4">Saisie de congés antérieurs</h2>
+        <form id="initialForm" class="max-w-md space-y-4">
+          <div><label>Année (ex: 2025)</label><input type="number" id="initYear" class="w-full border rounded p-2" required></div>
+          <div><label>Nombre de jours déjà pris</label><input type="number" id="initDays" class="w-full border rounded p-2" required></div>
+          <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded">Enregistrer</button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const API = 'https://votre-worker.workers.dev/api';
+    const token = localStorage.getItem('token');
+    if (!token) location.href = 'index.html';
+    function logout() { localStorage.removeItem('token'); location.href = 'index.html'; }
+
+    async function api(url, method='GET', body=null) {
+      const res = await fetch(API+url, { method, headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` }, body: body ? JSON.stringify(body) : null });
+      if (res.status === 401) { logout(); return; }
+      return res.json();
+    }
+
+    // Charger profil et soldes
+    (async () => {const profile = await api('/employee/profile');
+      document.getElementById('empName').innerText = ${profile.first_name} ${profile.last_name};
+      document.getElementById('statusText').innerText = profile.status;
+      const balances = await api('/leaves/balances');
+      document.getElementById('soldeCards').innerHTML = balances.map(b =>
+        <div class="bg-white p-4 rounded shadow"><p class="text-sm">Période ${b.year}-${b.year+1}</p><p class="text-2xl font-bold">${b.remaining} / ${b.total_days}</p></div>
+      ).join('');
+      // Calendrier
+      const calEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calEl, {
+        initialView: 'dayGridMonth', locale: 'fr', events: [] // charger depuis /leaves/history
+      });
+      calendar.render();
+      const requests = await api('/leaves/history');
+      calendar.addEventSource(requests.filter(r=>r.status==='Approuvé').map(r => ({
+        title: r.leave_type, start: r.start_date, end: r.end_date, color: r.leave_type==='annuel'?'blue':(r.leave_type==='maladie'?'red':'green')
+      })));
+    })();
+
+    // Impression PDF fiche
+    function imprimerFiche(requestId) {
+      api(`/leaves/requests/${requestId}`).then(data => {
+        const html = <div><h1>Fiche de congé</h1><p>Employé: ...</p><p>Dates: ${data.start_date} au ${data.end_date}</p></div>;
+        html2pdf().from(html).save('fiche_conge.pdf');
+      });
+    }
+  </script>
+</body>
+</html>
