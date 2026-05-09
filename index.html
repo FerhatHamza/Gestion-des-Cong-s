@@ -2,401 +2,369 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>EPSP Berriane – Gestion Congés</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EPSP Berriane - Gestion des congés</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6/index.global.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
-    body { font-family: 'Tajawal', sans-serif; }
-    /* Transition menu mobile */
-    .sidebar-mobile { transition: transform 0.3s ease; }
-    .sidebar-mobile.open { transform: translateX(0); }
-    /* Détection DevTools */
-    .devtools-detected { display: none; }
+    .sidebar { transition: transform 0.3s; }
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); position: fixed; z-index: 50; height: 100%; }
+      .sidebar.open { transform: translateX(0); }
+    }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-
-  <!-- ========== LOGIN VIEW ========== -->
-  <div id="loginView" class="flex items-center justify-center h-screen">
-    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md mx-4">
-      <h2 class="text-2xl font-bold mb-6 text-center">Gestion des Congés</h2>
-      <div class="mb-4">
-        <label class="block text-gray-700">Code de connexion</label>
-        <input type="password" id="code" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
-      </div>
-      <button id="loginBtn" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Se connecter</button>
-      <p id="loginError" class="text-red-500 mt-2 text-sm hidden"></p>
-    </div>
-  </div>
-
-  <!-- ========== REGISTER VIEW (compléter profil) ========== -->
-  <div id="registerView" class="hidden p-8">
-    <div class="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow">
-      <h2 class="text-2xl font-bold mb-6">Complétez vos informations</h2>
-      <form id="registerForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><label class="block">Nom</label><input type="text" id="first_name" class="w-full border rounded p-2" required></div>
-        <div><label class="block">Prénom</label><input type="text" id="last_name" class="w-full border rounded p-2" required></div>
-        <div><label class="block">Nom en arabe</label><input type="text" id="first_name_ar" class="w-full border rounded p-2" required></div>
-        <div><label class="block">Prénom en arabe</label><input type="text" id="last_name_ar" class="w-full border rounded p-2" required></div>
-        <div><label class="block">Grade</label><select id="grade_id" class="w-full border rounded p-2" required></select></div>
-        <div><label class="block">Diplôme</label><select id="degree_id" class="w-full border rounded p-2" required></select></div>
-        <div><label class="block">Service</label><select id="service_id" class="w-full border rounded p-2" required></select></div>
-        <div><label class="block">Établissement</label><select id="center_id" class="w-full border rounded p-2" required></select></div>
-        <div><label class="block">Région</label><select id="region" class="w-full border rounded p-2" required>
-          <option value="NORMAL">NORMAL</option><option value="SUD_2">SUD_2</option>
-        </select></div>
-        <div><label class="block">Téléphone professionnel</label><input type="text" id="work_phone" class="w-full border rounded p-2"></div>
-        <div class="md:col-span-2 mt-4">
-          <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">Enregistrer</button>
+<body class="bg-gray-100 min-h-screen font-sans">
+  <!-- Écran de connexion -->
+  <div id="login-screen" class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-6 text-center text-blue-800">EPSP Berriane</h1>
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Code de connexion</label>
+          <input type="password" id="login-code" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring focus:ring-blue-200">
         </div>
+        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">Connexion</button>
       </form>
-      <p id="registerMsg" class="mt-4 text-center text-sm"></p>
+      <p id="login-error" class="text-red-500 text-sm mt-2 hidden"></p>
     </div>
   </div>
 
-  <!-- ========== EMPLOYEE VIEW (dashboard) ========== -->
-  <div id="employeeView" class="hidden flex h-screen">
+  <!-- Écran d'inscription -->
+  <div id="register-screen" class="hidden flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white p-8 rounded-lg shadow-md w-full max-w-2xl">
+      <h2 class="text-2xl font-bold mb-6 text-center">Compléter votre profil</h2>
+      <form id="register-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label>Prénom</label><input id="reg-firstname" type="text" required class="mt-1 block w-full px-3 py-2 border rounded"></div>
+        <div><label>Nom</label><input id="reg-lastname" type="text" required class="mt-1 block w-full px-3 py-2 border rounded"></div>
+        <div><label>Prénom arabe</label><input id="reg-firstname-ar" type="text" class="mt-1 block w-full px-3 py-2 border rounded"></div>
+        <div><label>Nom arabe</label><input id="reg-lastname-ar" type="text" class="mt-1 block w-full px-3 py-2 border rounded"></div>
+        <div><label>Grade</label><select id="reg-grade" class="mt-1 block w-full px-3 py-2 border rounded"></select></div>
+        <div><label>Échelon</label><select id="reg-degree" class="mt-1 block w-full px-3 py-2 border rounded"></select></div>
+        <div><label>Service</label><select id="reg-service" class="mt-1 block w-full px-3 py-2 border rounded"></select></div>
+        <div><label>Centre</label><select id="reg-center" class="mt-1 block w-full px-3 py-2 border rounded"></select></div>
+        <div><label>Région</label><select id="reg-region" class="mt-1 block w-full px-3 py-2 border rounded"><option value="NORMAL">NORMAL</option><option value="SUD">SUD</option></select></div>
+        <div><label>Téléphone pro</label><input id="reg-phone" type="text" class="mt-1 block w-full px-3 py-2 border rounded"></div>
+        <div class="md:col-span-2"><button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Enregistrer</button></div>
+      </form>
+    </div>
+  </div>
 
-    <!-- Bouton hamburger (mobile) -->
-    <button id="menuToggle" class="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded shadow">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-      </svg>
-    </button>
-
-    <!-- Overlay mobile -->
-    <div id="overlay" class="hidden fixed inset-0 bg-black opacity-50 z-30 md:hidden"></div>
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-white shadow-md p-5 flex flex-col fixed md:static inset-y-0 left-0 z-40 transform -translate-x-full md:translate-x-0 sidebar-mobile">
-      <h2 class="text-xl font-bold mb-8">EPSP Berriane</h2>
-      <nav class="space-y-2 flex-1">
-        <a href="#" class="block p-2 bg-blue-100 rounded" onclick="showTab('dashboard'); closeMenu()">Tableau de bord</a>
-        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('request'); closeMenu()">Nouvelle demande</a>
-        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('history'); closeMenu()">Historique</a>
-        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="showTab('initial'); closeMenu()">Saisie initiale</a>
-        <a href="#" class="block p-2 hover:bg-gray-100 rounded" onclick="logout()">Déconnexion</a>
-      </nav>
-      <p id="empName" class="text-sm"></p>
+  <!-- Interface principale -->
+  <div id="app-screen" class="hidden flex h-screen overflow-hidden">
+    <aside id="sidebar" class="sidebar w-64 bg-blue-800 text-white flex-shrink-0 flex flex-col">
+      <div class="p-4 text-2xl font-bold text-center border-b border-blue-700">EPSP</div>
+      <nav class="flex-1 p-4 space-y-2" id="nav-links"></nav>
+      <button id="logout-btn" class="m-4 bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Déconnexion</button>
     </aside>
-
-    <!-- Contenu principal -->
-    <main class="flex-1 p-6 overflow-auto w-full">
-      <!-- Dashboard Tab -->
-      <div id="dashboardTab" class="tab-content">
-        <h1 class="text-2xl font-bold mb-4">Votre tableau de bord</h1>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6" id="soldeCards"></div>
-        <div class="bg-white p-4 rounded shadow">
-          <h2 class="font-bold mb-2">Statut actuel</h2>
-          <p id="statusText" class="text-lg"></p>
-        </div>
-        <div class="mt-6">
-          <h2 class="font-bold mb-2">Calendrier des congés</h2>
-          <div id="calendar" class="bg-white p-4 rounded shadow"></div>
-        </div>
-      </div>
-
-      <!-- Demande de congé Tab -->
-      <div id="requestTab" class="tab-content hidden">
-        <h2 class="text-2xl font-bold mb-4">Demande de congé</h2>
-        <form id="requestForm" class="max-w-md space-y-4 bg-white p-4 rounded shadow">
-          <div><label class="block">Type de congé</label>
-            <select id="leave_type" class="w-full border rounded p-2">
-              <option value="annuel">Annuel</option><option value="recuperation">Récupération</option><option value="maladie">Maladie</option>
-            </select>
-          </div>
-          <div><label class="block">Date de début</label><input type="date" id="start_date" class="w-full border rounded p-2" required></div>
-          <div>
-            <label class="block">Mode de saisie</label>
-            <select id="mode" class="w-full border rounded p-2" onchange="toggleMode()">
-              <option value="end_date">Date de retour</option><option value="duration">Nombre de jours</option>
-            </select>
-          </div>
-          <div id="endDateDiv"><label class="block">Date de retour</label><input type="date" id="end_date" class="w-full border rounded p-2"></div>
-          <div id="durationDiv" class="hidden"><label class="block">Nombre de jours</label><input type="number" id="duration" min="1" class="w-full border rounded p-2"></div>
-          <div><label class="block">Observation</label><input type="text" id="observation" class="w-full border rounded p-2"></div>
-          <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded">Envoyer la demande</button>
-        </form>
-        <p id="requestMsg" class="mt-2 text-sm text-green-600 hidden">Demande envoyée !</p>
-      </div>
-
-      <!-- Historique Tab -->
-      <div id="historyTab" class="tab-content hidden">
-        <h2 class="text-2xl font-bold mb-4">Historique des demandes</h2>
-        <div class="overflow-x-auto">
-          <table class="min-w-full bg-white">
-            <thead><tr class="bg-gray-100"><th class="p-2">Type</th><th class="p-2">Dates</th><th class="p-2">Jours</th><th class="p-2">Statut</th><th class="p-2">Action</th></tr></thead>
-            <tbody id="historyBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Saisie initiale Tab -->
-      <div id="initialTab" class="tab-content hidden">
-        <h2 class="text-2xl font-bold mb-4">Saisie de congés antérieurs</h2>
-        <form id="initialForm" class="max-w-md space-y-4 bg-white p-4 rounded shadow">
-          <div><label class="block">Année</label><input type="number" id="initYear" class="w-full border rounded p-2" required></div>
-          <div><label class="block">Jours déjà pris</label><input type="number" id="initDays" class="w-full border rounded p-2" required></div>
-          <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded">Enregistrer</button>
-        </form>
-        <p id="initialMsg" class="mt-2 text-sm text-green-600 hidden">Solde enregistré !</p>
-      </div>
-    </main>
+    <main id="main-content" class="flex-1 overflow-y-auto p-6 bg-gray-50"></main>
+    <button id="hamburger" class="md:hidden fixed top-4 left-4 z-50 bg-blue-800 text-white p-2 rounded">☰</button>
   </div>
 
   <script>
-    // ---------- CONFIG ----------
-    const API = 'https://winter-wildflower-7564.didcrist.workers.dev/api';
-    const token = localStorage.getItem('token');
-    let currentRole = null;
+    // Protection DevTools
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'U')) {
+        e.preventDefault();
+        return false;
+      }
+    });
+    setInterval(() => {
+      if (window.outerWidth - window.innerWidth > 160 || window.outerHeight - window.innerHeight > 160) {
+        document.body.innerHTML = '<div class="flex items-center justify-center h-screen"><h1 class="text-3xl font-bold">Accès interdit</h1></div>';
+      }
+    }, 1000);
 
-    // ---------- PROTECTION DEVTOOLS ----------
-    (function() {
-      document.addEventListener('contextmenu', e => e.preventDefault());
-      document.addEventListener('keydown', function(e) {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.shiftKey && e.key === 'J') || (e.ctrlKey && e.key === 'U')) {
-          e.preventDefault();
-          return false;
-        }
-      });
-      // Détection basique d'ouverture des DevTools (écart de largeur)
-      const threshold = 160;
-      setInterval(() => {
-        if (window.outerWidth - window.innerWidth > threshold || window.outerHeight - window.innerHeight > threshold) {
-          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:Tajawal,sans-serif;"><h1>Veuillez désactiver les outils de développement.</h1></div>';
-        }
-      }, 1000);
-    })();
+    // Variables globales
+    let token = localStorage.getItem('token');
+    let currentRole = localStorage.getItem('role');
 
-    // ---------- HELPERS ----------
-    async function api(url, method='GET', body=null) {
-      const res = await fetch(API+url, {
-        method,
-        headers: { 'Content-Type':'application/json', Authorization:`Bearer ${token}` },
-        body: body ? JSON.stringify(body) : null
+    function api(url, method = 'GET', body = null) {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = 'Bearer ' + token;
+      const opts = { method, headers };
+      if (body) opts.body = JSON.stringify(body);
+      return fetch(url, opts).then(res => {
+        if (res.status === 401) { logout(); throw new Error('Session expirée'); }
+        return res.json();
       });
-      if (res.status === 401) logout();
-      return res.json();
     }
 
     function logout() {
       localStorage.removeItem('token');
-      location.reload();
+      localStorage.removeItem('role');
+      token = null;
+      currentRole = null;
+      showScreen('login-screen');
     }
 
-    function showView(viewId) {
-      document.querySelectorAll('#loginView, #registerView, #employeeView').forEach(v => v.classList.add('hidden'));
-      document.getElementById(viewId).classList.remove('hidden');
+    function showScreen(id) {
+      document.querySelectorAll('#login-screen, #register-screen, #app-screen').forEach(el => el.classList.add('hidden'));
+      document.getElementById(id).classList.remove('hidden');
     }
 
-    function showTab(tab) {
-      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-      document.getElementById(tab+'Tab').classList.remove('hidden');
-    }
-
-    function closeMenu() {
-      document.getElementById('sidebar').classList.remove('open');
-      document.getElementById('overlay').classList.add('hidden');
-    }
-
-    // ---------- LOGIN ----------
-    if (token) {
-      // Vérifier token côté client : décodé pour savoir rôle
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      if (payload.role === 'employee') {
-        if (payload.firstLogin) showView('registerView');
-        else showView('employeeView');
-        initEmployee();
-      } else {
-        // Admin redirigé vers admin (hors périmètre ici)
-        alert('Interface admin séparée');
-      }
-    } else {
-      showView('loginView');
-    }
-
-    document.getElementById('loginBtn').onclick = async () => {
-      const code = document.getElementById('code').value.trim();
-      if (!code) return;
-      const res = await fetch(`${API}/auth/login`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({code})
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('token', data.token);
-        if (data.role === 'admin') {
-          alert('Interface admin séparée');
-        } else {
-          location.reload();
-        }
-      } else {
-        document.getElementById('loginError').textContent = data.error || 'Code invalide';
-        document.getElementById('loginError').classList.remove('hidden');
-      }
-    };
-
-    // ---------- REGISTER ----------
-    async function loadReferentials() {
-      const tables = ['grades','degrees','services','centers'];
-      for (const table of tables) {
-        const res = await fetch(`${API}/referentials/${table}`, { headers: { Authorization:`Bearer ${token}` } });
-        const data = await res.json();
-        const select = document.getElementById(table === 'centers' ? 'center_id' : table.slice(0,-1)+'_id');
-        select.innerHTML = '';
-        data.forEach(item => {
-          const opt = document.createElement('option'); opt.value = item.id; opt.text = item.name; select.appendChild(opt);
-        });
-      }
-    }
-
-    if (token) loadReferentials(); // pré-chargement même avant affichage
-
-    document.getElementById('registerForm').onsubmit = async (e) => {
+    // Connexion
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const body = {
-        first_name: document.getElementById('first_name').value,
-        last_name: document.getElementById('last_name').value,
-        first_name_ar: document.getElementById('first_name_ar').value,
-        last_name_ar: document.getElementById('last_name_ar').value,
-        grade_id: parseInt(document.getElementById('grade_id').value),
-        degree_id: parseInt(document.getElementById('degree_id').value),
-        service_id: parseInt(document.getElementById('service_id').value),
-        center_id: parseInt(document.getElementById('center_id').value),
-        region: document.getElementById('region').value,
-        work_phone: document.getElementById('work_phone').value
-      };
-      const res = await fetch(`${API}/auth/register`, {
-        method:'POST', headers:{'Content-Type':'application/json', Authorization:`Bearer ${token}`}, body:JSON.stringify(body)
-      });
-      if (res.ok) {
-        document.getElementById('registerMsg').textContent = 'Profil complété avec succès ! Redirection...';
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        const err = await res.json();
-        document.getElementById('registerMsg').textContent = err.error || 'Erreur';
+      const code = document.getElementById('login-code').value;
+      try {
+        const data = await api('/api/auth/login', 'POST', { code });
+        token = data.token;
+        currentRole = data.role;
+        localStorage.setItem('token', token);
+        localStorage.setItem('role', currentRole);
+        if (data.role === 'admin') {
+          showApp('admin');
+        } else {
+          if (!data.profileComplete) {
+            showScreen('register-screen');
+            loadReferentials();
+          } else {
+            showApp('employee');
+          }
+        }
+      } catch (err) {
+        document.getElementById('login-error').textContent = err.message;
+        document.getElementById('login-error').classList.remove('hidden');
       }
-    };
+    });
 
-    // ---------- EMPLOYE DASHBOARD ----------
-    async function initEmployee() {
-      // Profil & soldes
-      const profile = await api('/employee/profile');
-      document.getElementById('empName').innerText = `${profile.first_name} ${profile.last_name}`;
-      document.getElementById('statusText').innerText = profile.status;
+    async function loadReferentials() {
+      for (const table of ['grades','degrees','services','centers']) {
+        const data = await api('/api/referentials/' + table);
+        const select = document.getElementById('reg-' + table.slice(0,-1));
+        select.innerHTML = '<option value="">Sélectionnez</option>';
+        data.forEach(item => select.innerHTML += '<option value="'+item.id+'">'+item.name+'</option>');
+      }
+    }
 
-      const balances = await api('/leaves/balances');
-      document.getElementById('soldeCards').innerHTML = balances.map(b =>
-        `<div class="bg-white p-4 rounded shadow"><p class="text-sm">Période ${b.year}-${b.year+1}</p><p class="text-2xl font-bold">${b.remaining} / ${b.total_days}</p></div>`
-      ).join('');
+    document.getElementById('register-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const payload = {
+        first_name: document.getElementById('reg-firstname').value,
+        last_name: document.getElementById('reg-lastname').value,
+        first_name_ar: document.getElementById('reg-firstname-ar').value,
+        last_name_ar: document.getElementById('reg-lastname-ar').value,
+        grade_id: document.getElementById('reg-grade').value,
+        degree_id: document.getElementById('reg-degree').value,
+        service_id: document.getElementById('reg-service').value,
+        center_id: document.getElementById('reg-center').value,
+        region: document.getElementById('reg-region').value,
+        work_phone: document.getElementById('reg-phone').value
+      };
+      await api('/api/auth/register', 'POST', payload);
+      showApp('employee');
+    });
 
-      // Calendrier
-      const calEl = document.getElementById('calendar');
-      const calendar = new FullCalendar.Calendar(calEl, {
-        initialView: 'dayGridMonth',
-        locale: 'fr',
-        events: []
+    function showApp(role) {
+      showScreen('app-screen');
+      const nav = document.getElementById('nav-links');
+      if (role === 'employee') {
+        nav.innerHTML = '<a href="#" id="nav-dashboard" class="block py-2 px-4 rounded hover:bg-blue-700">Tableau de bord</a>'
+          + '<a href="#" id="nav-request" class="block py-2 px-4 rounded hover:bg-blue-700">Nouvelle demande</a>'
+          + '<a href="#" id="nav-history" class="block py-2 px-4 rounded hover:bg-blue-700">Historique</a>'
+          + '<a href="#" id="nav-initial" class="block py-2 px-4 rounded hover:bg-blue-700">Saisie solde initial</a>';
+        document.getElementById('nav-dashboard').onclick = employeeDashboard;
+        document.getElementById('nav-request').onclick = leaveRequestForm;
+        document.getElementById('nav-history').onclick = leaveHistory;
+        document.getElementById('nav-initial').onclick = initialBalanceForm;
+      } else {
+        nav.innerHTML = '<a href="#" id="nav-admin-dash" class="block py-2 px-4 rounded hover:bg-blue-700">Dashboard</a>'
+          + '<a href="#" id="nav-admin-ref" class="block py-2 px-4 rounded hover:bg-blue-700">Référentiels</a>';
+        document.getElementById('nav-admin-dash').onclick = adminDashboard;
+        document.getElementById('nav-admin-ref').onclick = adminReferentials;
+      }
+      document.getElementById('logout-btn').onclick = logout;
+      document.getElementById('hamburger').onclick = () => document.getElementById('sidebar').classList.toggle('open');
+      if (role === 'employee') employeeDashboard();
+      else adminDashboard();
+    }
+
+    // ----- Fonctions Employé -----
+    async function employeeDashboard() {
+      const main = document.getElementById('main-content');
+      main.innerHTML = '<h2 class="text-2xl font-bold mb-4">Tableau de bord</h2><div id="balance-cards" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>'
+        +'<div class="bg-white p-4 rounded shadow"><h3 class="text-lg font-semibold mb-2">Calendrier des congés</h3><div id="calendar"></div></div>';
+
+      const profile = await api('/api/employee/profile');
+      document.getElementById('balance-cards').insertAdjacentHTML('beforeend',
+        '<div class="bg-white p-4 rounded shadow"><p class="text-sm text-gray-500">Statut</p><p class="text-xl font-bold">'+profile.status+'</p></div>');
+
+      const balances = await api('/api/leaves/balances');
+      balances.forEach(b => {
+        document.getElementById('balance-cards').insertAdjacentHTML('beforeend',
+          '<div class="bg-white p-4 rounded shadow"><p class="text-sm text-gray-500">'+b.year+'</p><p class="text-xl font-bold">'+(b.remaining)+' / '+b.total_days+' j</p></div>');
       });
-      calendar.render();
-      const requests = await api('/leaves/history');
-      calendar.addEventSource(requests.filter(r => r.status==='Approuvé').map(r => ({
+
+      const history = await api('/api/leaves/history');
+      const events = history.filter(r => r.status === 'Approuvé').map(r => ({
         title: r.leave_type,
         start: r.start_date,
-        end: r.end_date,
-        color: r.leave_type==='annuel'?'blue':(r.leave_type==='maladie'?'red':'green')
-      })));
+        end: new Date(new Date(r.end_date).getTime() + 86400000).toISOString().split('T')[0],
+        color: r.leave_type==='annuel'?'#3b82f6': r.leave_type==='récupération'?'#10b981':'#f59e0b'
+      }));
+      const calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+        initialView: 'dayGridMonth',
+        events,
+        locale: 'fr'
+      });
+      calendar.render();
+    }
 
-      // Historique
-      loadHistory();
-
-      // Demande
-      document.getElementById('requestForm').onsubmit = async (e) => {
-        e.preventDefault();
-        const leave_type = document.getElementById('leave_type').value;
-        const start_date = document.getElementById('start_date').value;
-        const mode = document.getElementById('mode').value;
-        let end_date = null;
-        let duration = null;
-        if (mode === 'end_date') {
-          end_date = document.getElementById('end_date').value;
-        } else {
-          duration = parseInt(document.getElementById('duration').value);
-        }
-        const observation = document.getElementById('observation').value;
-
-        const res = await api('/leaves/request', 'POST', { leave_type, start_date, end_date, duration, mode, observation });
-        if (res.success) {
-          document.getElementById('requestMsg').classList.remove('hidden');
-          document.getElementById('requestForm').reset();
-          setTimeout(() => loadHistory(), 1000);
-        } else {
-          alert(res.error || 'Erreur');
-        }
+    function leaveRequestForm() {
+      document.getElementById('main-content').innerHTML = '<h2 class="text-2xl font-bold mb-4">Nouvelle demande de congé</h2>'
+      +'<form id="leave-form" class="bg-white p-6 rounded shadow grid grid-cols-1 md:grid-cols-2 gap-4">'
+      +'<div><label>Type</label><select id="ltype" class="mt-1 w-full border rounded p-2"><option value="annuel">Annuel</option><option value="récupération">Récupération</option><option value="maladie">Maladie</option></select></div>'
+      +'<div><label>Date début</label><input id="lstart" type="date" required class="mt-1 w-full border rounded p-2"></div>'
+      +'<div><label>Mode</label><select id="lmode" class="mt-1 w-full border rounded p-2"><option value="days">Nombre de jours</option><option value="return">Date de retour</option></select></div>'
+      +'<div id="ldays-group"><label>Nombre de jours</label><input id="ldays" type="number" min="1" class="mt-1 w-full border rounded p-2"></div>'
+      +'<div id="lreturn-group" class="hidden"><label>Date de retour</label><input id="lreturn" type="date" class="mt-1 w-full border rounded p-2"></div>'
+      +'<div class="md:col-span-2"><label>Observation</label><textarea id="lobs" rows="2" class="mt-1 w-full border rounded p-2"></textarea></div>'
+      +'<div class="md:col-span-2"><button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded hover:bg-blue-700">Soumettre</button></div>'
+      +'</form><div id="leave-msg" class="mt-4"></div>';
+      document.getElementById('lmode').onchange = function() {
+        const isDays = this.value === 'days';
+        document.getElementById('ldays-group').classList.toggle('hidden', !isDays);
+        document.getElementById('lreturn-group').classList.toggle('hidden', isDays);
       };
-
-      // Mode durée/date
-      window.toggleMode = function() {
-        const mode = document.getElementById('mode').value;
-        if (mode === 'duration') {
-          document.getElementById('endDateDiv').classList.add('hidden');
-          document.getElementById('durationDiv').classList.remove('hidden');
-        } else {
-          document.getElementById('endDateDiv').classList.remove('hidden');
-          document.getElementById('durationDiv').classList.add('hidden');
-        }
-      };
-
-      // Saisie initiale
-      document.getElementById('initialForm').onsubmit = async (e) => {
+      document.getElementById('leave-form').onsubmit = async (e) => {
         e.preventDefault();
-        const year = parseInt(document.getElementById('initYear').value);
-        const days = parseInt(document.getElementById('initDays').value);
-        const res = await api('/leaves/initial', 'POST', { year, days });
-        if (res.success) {
-          document.getElementById('initialMsg').classList.remove('hidden');
-          document.getElementById('initialForm').reset();
-        } else {
-          alert(res.error);
+        const mode = document.getElementById('lmode').value;
+        const payload = {
+          leave_type: document.getElementById('ltype').value,
+          start_date: document.getElementById('lstart').value,
+          mode: mode === 'days' ? 'duration' : 'return_date',
+          end_date: mode === 'return' ? document.getElementById('lreturn').value : undefined,
+          duration: mode === 'days' ? Number(document.getElementById('ldays').value) : undefined,
+          observation: document.getElementById('lobs').value
+        };
+        try {
+          await api('/api/leaves/request', 'POST', payload);
+          document.getElementById('leave-msg').innerHTML = '<p class="text-green-600">Demande envoyée avec succès.</p>';
+        } catch (err) {
+          document.getElementById('leave-msg').innerHTML = '<p class="text-red-600">'+err.message+'</p>';
         }
       };
     }
 
-    // Historique
-    async function loadHistory() {
-      const requests = await api('/leaves/history');
-      const tbody = document.getElementById('historyBody');
-      tbody.innerHTML = requests.map(r => {
-        const imprimer = r.status === 'Approuvé'
-          ? `<button onclick="imprimerFiche(${r.id})" class="text-blue-600 underline">Imprimer</button>` : '';
-        return `<tr><td class="p-2">${r.leave_type}</td><td class="p-2">${r.start_date} → ${r.end_date}</td><td class="p-2">${r.duration}</td><td class="p-2">${r.status}</td><td class="p-2">${imprimer}</td></tr>`;
-      }).join('');
+    async function leaveHistory() {
+      document.getElementById('main-content').innerHTML = '<h2 class="text-2xl font-bold mb-4">Historique des demandes</h2><div id="history-table"></div>';
+      const data = await api('/api/leaves/history');
+      let html = '<table class="min-w-full bg-white rounded shadow"><thead class="bg-gray-100"><tr><th class="p-2 text-left">Type</th><th class="p-2">Début</th><th class="p-2">Fin</th><th class="p-2">Jours</th><th class="p-2">Statut</th><th class="p-2">PDF</th></tr></thead><tbody>';
+      data.forEach(r => {
+        html += '<tr class="border-t"><td class="p-2">'+r.leave_type+'</td><td class="p-2">'+r.start_date+'</td><td class="p-2">'+r.end_date+'</td><td class="p-2 text-center">'+r.duration+'</td><td class="p-2 text-center">'+r.status+'</td><td class="p-2 text-center"><button onclick="printLeave('+r.id+')" class="text-blue-600 underline">PDF</button></td></tr>';
+      });
+      html += '</tbody></table>';
+      document.getElementById('history-table').innerHTML = html;
     }
 
-    // Impression PDF
-    window.imprimerFiche = async function(id) {
-      const data = await api(`/leaves/requests/${id}`);
-      const html = `
-        <div style="padding:20px;font-family:Tajawal,sans-serif;direction:rtl">
-          <h1>Fiche de congé</h1>
-          <p>Employé : ${document.getElementById('empName').innerText}</p>
-          <p>Dates : ${data.start_date} au ${data.end_date}</p>
-          <p>Type : ${data.leave_type}</p>
-          <p>Statut : ${data.status}</p>
-        </div>`;
-      html2pdf().from(html).save(`fiche_conge_${id}.pdf`);
+    window.printLeave = async (id) => {
+      const detail = await api('/api/leaves/requests/'+id);
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.setFontSize(16);
+      doc.text('Fiche de congé - EPSP Berriane', 10, 15);
+      doc.setFontSize(12);
+      doc.text('Employé: '+detail.employee_name, 10, 25);
+      doc.text('Type: '+detail.leave_type, 10, 32);
+      doc.text('Du '+detail.start_date+' au '+detail.end_date, 10, 39);
+      doc.text('Durée: '+detail.duration+' jours', 10, 46);
+      doc.text('Statut: '+detail.status, 10, 53);
+      doc.save('conge_'+id+'.pdf');
     };
 
-    // ---------- Menu mobile ----------
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('overlay');
-    document.getElementById('menuToggle').addEventListener('click', () => {
-      sidebar.classList.toggle('open');
-      overlay.classList.toggle('hidden');
-    });
-    overlay.addEventListener('click', closeMenu);
+    function initialBalanceForm() {
+      document.getElementById('main-content').innerHTML = '<h2 class="text-2xl font-bold mb-4">Saisie du solde initial</h2>'
+        +'<form id="init-form" class="bg-white p-6 rounded shadow space-y-4 max-w-md">'
+        +'<div><label>Année</label><input id="iyear" type="number" required class="mt-1 w-full border rounded p-2"></div>'
+        +'<div><label>Jours déjà pris</label><input id="iused" type="number" min="0" step="0.5" required class="mt-1 w-full border rounded p-2"></div>'
+        +'<button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">Enregistrer</button>'
+        +'</form><div id="init-msg" class="mt-4"></div>';
+      document.getElementById('init-form').onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await api('/api/leaves/initial', 'POST', {
+            year: parseInt(document.getElementById('iyear').value),
+            used_days: parseFloat(document.getElementById('iused').value)
+          });
+          document.getElementById('init-msg').innerHTML = '<p class="text-green-600">Solde enregistré.</p>';
+        } catch (err) {
+          document.getElementById('init-msg').innerHTML = '<p class="text-red-600">'+err.message+'</p>';
+        }
+      };
+    }
+
+    // ----- Fonctions Admin -----
+    async function adminDashboard() {
+      document.getElementById('main-content').innerHTML = '<h2 class="text-2xl font-bold mb-4">Dashboard administrateur</h2><div id="admin-stats" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6"></div>'
+        +'<div class="bg-white p-4 rounded shadow mb-6"><h3 class="text-lg font-semibold mb-2">Top consommateurs (congé annuel)</h3><ul id="top-cons" class="list-disc pl-5"></ul></div>'
+        +'<div class="bg-white p-4 rounded shadow"><h3 class="text-lg font-semibold mb-2">Demandes en attente</h3><div id="pending-list"></div></div>';
+      const dash = await api('/api/admin/dashboard');
+      document.getElementById('admin-stats').innerHTML = 
+        '<div class="bg-white p-4 rounded shadow"><p class="text-sm">Employés</p><p class="text-2xl font-bold">'+dash.totalEmployees+'</p></div>'
+        +'<div class="bg-white p-4 rounded shadow"><p class="text-sm">En attente</p><p class="text-2xl font-bold">'+dash.pending+'</p></div>'
+        +'<div class="bg-white p-4 rounded shadow"><p class="text-sm">Approuvées aujourd\'hui</p><p class="text-2xl font-bold">'+dash.approvedToday+'</p></div>';
+      const topList = document.getElementById('top-cons');
+      dash.topConsumers.forEach(e => topList.innerHTML += '<li>'+e.first_name+' '+e.last_name+' - '+e.total_days+' jours</li>');
+      let pendingHtml = '<table class="w-full"><thead><tr><th class="p-2 text-left">Employé</th><th class="p-2">Type</th><th class="p-2">Dates</th><th class="p-2">Actions</th></tr></thead><tbody>';
+      dash.pendingList.forEach(r => {
+        pendingHtml += '<tr class="border-t"><td class="p-2">'+r.first_name+' '+r.last_name+'</td><td class="p-2">'+r.leave_type+'</td><td class="p-2">'+r.start_date+' → '+r.end_date+' ('+r.duration+'j)</td>'
+        +'<td class="p-2"><button onclick="validateLeave('+r.id+',\'Approuvé\')" class="bg-green-500 text-white px-2 py-1 rounded mr-1">✔</button>'
+        +'<button onclick="validateLeave('+r.id+',\'Refusé\')" class="bg-red-500 text-white px-2 py-1 rounded">✖</button></td></tr>';
+      });
+      pendingHtml += '</tbody></table>';
+      document.getElementById('pending-list').innerHTML = pendingHtml;
+    }
+
+    window.validateLeave = async (id, status) => {
+      await api('/api/leaves/requests/'+id+'/validate', 'PUT', { status });
+      adminDashboard();
+    };
+
+    async function adminReferentials() {
+      document.getElementById('main-content').innerHTML = '<h2 class="text-2xl font-bold mb-4">Gestion des référentiels</h2>'
+      +'<select id="ref-table" class="mb-4 p-2 border rounded"><option value="grades">Grades</option><option value="degrees">Échelons</option><option value="services">Services</option><option value="centers">Centres</option></select>'
+      +'<div id="ref-list" class="bg-white p-4 rounded shadow"></div>'
+      +'<div class="mt-4 flex space-x-2"><input id="ref-name" type="text" class="border rounded p-2 flex-1" placeholder="Nom"><button id="ref-add" class="bg-blue-600 text-white px-4 py-2 rounded">Ajouter</button></div>';
+      const tableSelect = document.getElementById('ref-table');
+      const loadTable = async () => {
+        const table = tableSelect.value;
+        const data = await api('/api/referentials/'+table);
+        let html = '<ul>';
+        data.forEach(item => html += '<li class="py-1">'+item.name+' <button onclick="deleteRef(\''+table+'\','+item.id+')" class="text-red-500 ml-2">Suppr</button></li>');
+        html += '</ul>';
+        document.getElementById('ref-list').innerHTML = html;
+      };
+      tableSelect.onchange = loadTable;
+      loadTable();
+      document.getElementById('ref-add').onclick = async () => {
+        const name = document.getElementById('ref-name').value;
+        if (!name) return;
+        await api('/api/referentials/'+tableSelect.value, 'POST', { name });
+        document.getElementById('ref-name').value = '';
+        loadTable();
+      };
+    }
+    window.deleteRef = async (table, id) => {
+      if (!confirm('Confirmer la suppression ?')) return;
+      await api('/api/referentials/'+table+'?id='+id, 'DELETE');
+      adminReferentials();
+    };
+
+    // Restauration de session
+    if (token && currentRole) {
+      if (currentRole === 'admin') showApp('admin');
+      else {
+        api('/api/employee/profile')
+          .then(() => showApp('employee'))
+          .catch(() => {
+            showScreen('register-screen');
+            loadReferentials();
+          });
+      }
+    }
   </script>
 </body>
 </html>
